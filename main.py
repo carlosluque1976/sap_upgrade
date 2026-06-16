@@ -71,6 +71,24 @@ class DocUpdate(BaseModel):
     content: Optional[str] = None
 
 
+class ContactCreate(BaseModel):
+    name: str
+    role: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ContactUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    notes: Optional[str] = None
+
+
 # --- Events ---
 
 @app.on_event("startup")
@@ -429,3 +447,85 @@ def delete_doc(doc_id: int):
     conn.commit()
     conn.close()
     return {"message": "Document deleted"}
+
+
+# --- Routes: Contacts ---
+
+@app.get("/api/contacts")
+def get_contacts():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM contacts ORDER BY name")
+    contacts = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return contacts
+
+
+@app.get("/api/contacts/{contact_id}")
+def get_contact(contact_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return dict(row)
+
+
+@app.post("/api/contacts", status_code=201)
+def create_contact(contact: ContactCreate):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO contacts (name, role, email, phone, company, notes) VALUES (?, ?, ?, ?, ?, ?)",
+        (contact.name, contact.role, contact.email, contact.phone, contact.company, contact.notes),
+    )
+    conn.commit()
+    cid = cursor.lastrowid
+    cursor.execute("SELECT * FROM contacts WHERE id = ?", (cid,))
+    new_contact = dict(cursor.fetchone())
+    conn.close()
+    return new_contact
+
+
+@app.put("/api/contacts/{contact_id}")
+def update_contact(contact_id: int, contact: ContactUpdate):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    updates = []
+    values = []
+    for field, value in contact.model_dump(exclude_unset=True).items():
+        updates.append(f"{field} = ?")
+        values.append(value)
+
+    if updates:
+        values.append(contact_id)
+        query = f"UPDATE contacts SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,))
+    updated = dict(cursor.fetchone())
+    conn.close()
+    return updated
+
+
+@app.delete("/api/contacts/{contact_id}")
+def delete_contact(contact_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM contacts WHERE id = ?", (contact_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Contact not found")
+    cursor.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Contact deleted"}

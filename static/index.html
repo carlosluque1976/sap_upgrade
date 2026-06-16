@@ -15,27 +15,36 @@
             <div class="flex items-center gap-3">
                 <i class="fas fa-server text-blue-400 text-2xl"></i>
                 <h1 class="text-xl font-bold text-white">SAP Upgrade Tracker</h1>
+                <!-- Language Switcher -->
+                <div class="flex gap-1 ml-4">
+                    <button onclick="setLang('es')" id="flag-es" class="text-xl opacity-50 hover:opacity-100 transition-opacity" title="Español">🇪🇸</button>
+                    <button onclick="setLang('ro')" id="flag-ro" class="text-xl opacity-50 hover:opacity-100 transition-opacity" title="Română">🇷🇴</button>
+                </div>
             </div>
             <nav class="flex gap-2 flex-wrap">
                 <button onclick="showView('dashboard')" id="btn-dashboard"
                     class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white">
-                    <i class="fas fa-chart-pie mr-1"></i> Dashboard
+                    <i class="fas fa-chart-pie mr-1"></i> <span data-i18n="nav.dashboard">Dashboard</span>
                 </button>
                 <button onclick="showView('steps')" id="btn-steps"
                     class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
-                    <i class="fas fa-list-check mr-1"></i> Pasos
+                    <i class="fas fa-list-check mr-1"></i> <span data-i18n="nav.steps">Pasos</span>
                 </button>
                 <button onclick="showView('incidents')" id="btn-incidents"
                     class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
-                    <i class="fas fa-triangle-exclamation mr-1"></i> Incidencias
+                    <i class="fas fa-triangle-exclamation mr-1"></i> <span data-i18n="nav.incidents">Incidencias</span>
                 </button>
                 <button onclick="showView('docs')" id="btn-docs"
                     class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
-                    <i class="fas fa-book mr-1"></i> Documentación
+                    <i class="fas fa-book mr-1"></i> <span data-i18n="nav.docs">Documentación</span>
                 </button>
                 <button onclick="showView('gantt')" id="btn-gantt"
                     class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
                     <i class="fas fa-bars-staggered mr-1"></i> Gantt
+                </button>
+                <button onclick="showView('contacts')" id="btn-contacts"
+                    class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
+                    <i class="fas fa-address-book mr-1"></i> <span data-i18n="nav.contacts">Contactos</span>
                 </button>
             </nav>
         </div>
@@ -46,9 +55,8 @@
 
         <!-- Dashboard View -->
         <section id="view-dashboard">
-            <!-- Overall Progress -->
             <div class="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
-                <h2 class="text-lg font-semibold mb-3">Progreso General del Upgrade</h2>
+                <h2 class="text-lg font-semibold mb-3" data-i18n="dashboard.overall_progress">Progreso General del Upgrade</h2>
                 <div class="flex items-center gap-4">
                     <div class="flex-1">
                         <div class="w-full bg-gray-700 rounded-full h-4">
@@ -57,38 +65,34 @@
                     </div>
                     <span id="overall-progress-text" class="text-2xl font-bold text-blue-400">0%</span>
                 </div>
-                <p id="overall-progress-detail" class="text-sm text-gray-400 mt-2">0 de 0 pasos completados</p>
+                <p id="overall-progress-detail" class="text-sm text-gray-400 mt-2"></p>
             </div>
-
-            <!-- Phase Cards -->
-            <div id="phase-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>
-
-            <!-- Status Summary -->
+            <div id="phase-cards" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"></div>
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
                     <i class="fas fa-clock text-yellow-400 text-xl mb-2"></i>
                     <p id="stat-pending" class="text-2xl font-bold text-yellow-400">0</p>
-                    <p class="text-xs text-gray-400">Pendientes</p>
+                    <p class="text-xs text-gray-400" data-i18n="status.pending">Pendientes</p>
                 </div>
                 <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
                     <i class="fas fa-spinner text-blue-400 text-xl mb-2"></i>
                     <p id="stat-in-progress" class="text-2xl font-bold text-blue-400">0</p>
-                    <p class="text-xs text-gray-400">En Progreso</p>
+                    <p class="text-xs text-gray-400" data-i18n="status.in_progress">En Progreso</p>
                 </div>
                 <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
                     <i class="fas fa-check-circle text-green-400 text-xl mb-2"></i>
                     <p id="stat-completed" class="text-2xl font-bold text-green-400">0</p>
-                    <p class="text-xs text-gray-400">Completados</p>
+                    <p class="text-xs text-gray-400" data-i18n="status.completed">Completados</p>
                 </div>
                 <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
                     <i class="fas fa-ban text-red-400 text-xl mb-2"></i>
                     <p id="stat-blocked" class="text-2xl font-bold text-red-400">0</p>
-                    <p class="text-xs text-gray-400">Bloqueados</p>
+                    <p class="text-xs text-gray-400" data-i18n="status.blocked">Bloqueados</p>
                 </div>
                 <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
                     <i class="fas fa-triangle-exclamation text-orange-400 text-xl mb-2"></i>
                     <p id="stat-incidents" class="text-2xl font-bold text-orange-400">0</p>
-                    <p class="text-xs text-gray-400">Incidencias Abiertas</p>
+                    <p class="text-xs text-gray-400" data-i18n="status.open_incidents">Incidencias Abiertas</p>
                 </div>
             </div>
         </section>
@@ -96,10 +100,9 @@
         <!-- Steps View -->
         <section id="view-steps" class="hidden">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold">Gestión de Pasos</h2>
-                <button onclick="openAddModal()"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                    <i class="fas fa-plus mr-1"></i> Nuevo Paso
+                <h2 class="text-lg font-semibold" data-i18n="steps.title">Gestión de Pasos</h2>
+                <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> <span data-i18n="steps.new">Nuevo Paso</span>
                 </button>
             </div>
             <div id="phase-tabs" class="flex gap-2 mb-4 flex-wrap"></div>
@@ -109,29 +112,21 @@
         <!-- Incidents View -->
         <section id="view-incidents" class="hidden">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold">Gestión de Incidencias</h2>
-                <button onclick="openIncidentModal()"
-                    class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                    <i class="fas fa-plus mr-1"></i> Nueva Incidencia
+                <h2 class="text-lg font-semibold" data-i18n="incidents.title">Gestión de Incidencias</h2>
+                <button onclick="openIncidentModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> <span data-i18n="incidents.new">Nueva Incidencia</span>
                 </button>
             </div>
-            <div id="incident-filters" class="flex gap-2 mb-4 flex-wrap">
-                <button onclick="filterIncidents(null)" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-blue-600 text-white">Todas</button>
-                <button onclick="filterIncidents('open')" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600">Abiertas</button>
-                <button onclick="filterIncidents('in_progress')" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600">En Progreso</button>
-                <button onclick="filterIncidents('resolved')" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600">Resueltas</button>
-                <button onclick="filterIncidents('closed')" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600">Cerradas</button>
-            </div>
+            <div id="incident-filters" class="flex gap-2 mb-4 flex-wrap"></div>
             <div id="incidents-list" class="space-y-3"></div>
         </section>
 
         <!-- Documentation View -->
         <section id="view-docs" class="hidden">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold">Documentación del Proceso</h2>
-                <button onclick="openDocModal()"
-                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                    <i class="fas fa-plus mr-1"></i> Nuevo Documento
+                <h2 class="text-lg font-semibold" data-i18n="docs.title">Documentación del Proceso</h2>
+                <button onclick="openDocModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> <span data-i18n="docs.new">Nuevo Documento</span>
                 </button>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -139,7 +134,7 @@
                 <div id="doc-editor" class="lg:col-span-2 bg-gray-800 rounded-xl border border-gray-700 p-5 min-h-[400px]">
                     <div class="text-center text-gray-500 py-12">
                         <i class="fas fa-file-lines text-4xl mb-3"></i>
-                        <p>Selecciona un documento para editarlo</p>
+                        <p data-i18n="docs.select_prompt">Selecciona un documento para editarlo</p>
                     </div>
                 </div>
             </div>
@@ -148,19 +143,28 @@
         <!-- Gantt View -->
         <section id="view-gantt" class="hidden">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold">Vista Gantt del Proyecto</h2>
-                <div class="flex gap-2 items-center">
-                    <span class="text-xs text-gray-400">Leyenda:</span>
-                    <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 rounded bg-yellow-500 inline-block"></span> Pendiente</span>
-                    <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 rounded bg-blue-500 inline-block"></span> En Progreso</span>
-                    <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 rounded bg-green-500 inline-block"></span> Completado</span>
-                    <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 rounded bg-red-500 inline-block"></span> Bloqueado</span>
+                <h2 class="text-lg font-semibold" data-i18n="gantt.title">Vista Gantt del Proyecto</h2>
+                <div class="flex gap-2 items-center text-xs">
+                    <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-yellow-500 inline-block"></span> <span data-i18n="status.pending">Pendiente</span></span>
+                    <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-blue-500 inline-block"></span> <span data-i18n="status.in_progress">En Progreso</span></span>
+                    <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-green-500 inline-block"></span> <span data-i18n="status.completed">Completado</span></span>
+                    <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-500 inline-block"></span> <span data-i18n="status.blocked">Bloqueado</span></span>
                 </div>
             </div>
             <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-                <div id="gantt-container" class="overflow-x-auto">
-                </div>
+                <div id="gantt-container" class="overflow-x-auto"></div>
             </div>
+        </section>
+
+        <!-- Contacts View -->
+        <section id="view-contacts" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold" data-i18n="contacts.title">Equipo de Contactos</h2>
+                <button onclick="openContactModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> <span data-i18n="contacts.new">Nuevo Contacto</span>
+                </button>
+            </div>
+            <div id="contacts-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </section>
     </main>
 
@@ -168,36 +172,28 @@
     <div id="modal-step" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-lg shadow-2xl">
             <div class="p-6">
-                <h3 id="modal-title" class="text-lg font-semibold mb-4">Nuevo Paso</h3>
+                <h3 id="modal-title" class="text-lg font-semibold mb-4"></h3>
                 <form id="step-form" class="space-y-4">
                     <input type="hidden" id="form-step-id">
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Fase</label>
-                        <select id="form-phase" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"></select>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.phase">Fase</label>
+                        <select id="form-phase" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"></select>
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Título</label>
-                        <input type="text" id="form-title" required
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Nombre del paso">
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.title_label">Título</label>
+                        <input type="text" id="form-title" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Descripción</label>
-                        <textarea id="form-description" rows="3"
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Descripción detallada del paso"></textarea>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.description">Descripción</label>
+                        <textarea id="form-description" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"></textarea>
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Responsable</label>
-                        <input type="text" id="form-responsible"
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Nombre del responsable">
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.responsible">Responsable</label>
+                        <select id="form-responsible" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"></select>
                     </div>
                     <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeModal()"
-                            class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">Cancelar</button>
-                        <button type="submit"
-                            class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">Guardar</button>
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300" data-i18n="form.cancel">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium" data-i18n="form.save">Guardar</button>
                     </div>
                 </form>
             </div>
@@ -208,17 +204,13 @@
     <div id="modal-notes" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-lg shadow-2xl">
             <div class="p-6">
-                <h3 class="text-lg font-semibold mb-4">Documentación del Paso</h3>
+                <h3 class="text-lg font-semibold mb-4" data-i18n="notes.title">Documentación del Paso</h3>
                 <input type="hidden" id="notes-step-id">
                 <p id="notes-step-title" class="text-sm text-gray-400 mb-3"></p>
-                <textarea id="notes-content" rows="8"
-                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Documenta aquí los detalles, comandos ejecutados, observaciones..."></textarea>
+                <textarea id="notes-content" rows="8" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"></textarea>
                 <div class="flex justify-end gap-2 pt-4">
-                    <button onclick="closeNotesModal()"
-                        class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">Cancelar</button>
-                    <button onclick="saveNotes()"
-                        class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">Guardar Notas</button>
+                    <button onclick="closeNotesModal()" class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300" data-i18n="form.cancel">Cancelar</button>
+                    <button onclick="saveNotes()" class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium" data-i18n="form.save_notes">Guardar Notas</button>
                 </div>
             </div>
         </div>
@@ -228,55 +220,45 @@
     <div id="modal-incident" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="p-6">
-                <h3 id="incident-modal-title" class="text-lg font-semibold mb-4">Nueva Incidencia</h3>
+                <h3 id="incident-modal-title" class="text-lg font-semibold mb-4"></h3>
                 <form id="incident-form" class="space-y-4">
                     <input type="hidden" id="inc-form-id">
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Título</label>
-                        <input type="text" id="inc-form-title" required
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="Descripción breve de la incidencia">
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.title_label">Título</label>
+                        <input type="text" id="inc-form-title" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Descripción</label>
-                        <textarea id="inc-form-description" rows="3"
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="Detalle completo de la incidencia"></textarea>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.description">Descripción</label>
+                        <textarea id="inc-form-description" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"></textarea>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm text-gray-400 mb-1">Severidad</label>
+                            <label class="block text-sm text-gray-400 mb-1" data-i18n="form.severity">Severidad</label>
                             <select id="inc-form-severity" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
-                                <option value="low">Baja</option>
-                                <option value="medium" selected>Media</option>
-                                <option value="high">Alta</option>
-                                <option value="critical">Crítica</option>
+                                <option value="low">Baja / Scăzută</option>
+                                <option value="medium" selected>Media / Medie</option>
+                                <option value="high">Alta / Ridicată</option>
+                                <option value="critical">Crítica / Critică</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm text-gray-400 mb-1">Fase relacionada</label>
+                            <label class="block text-sm text-gray-400 mb-1" data-i18n="form.related_phase">Fase</label>
                             <select id="inc-form-phase" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
-                                <option value="">-- Sin fase --</option>
+                                <option value="">--</option>
                             </select>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Responsable</label>
-                        <input type="text" id="inc-form-responsible"
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="Responsable de resolver">
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.responsible">Responsable</label>
+                        <input type="text" id="inc-form-responsible" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
                     </div>
                     <div id="inc-resolution-section" class="hidden">
-                        <label class="block text-sm text-gray-400 mb-1">Resolución</label>
-                        <textarea id="inc-form-resolution" rows="3"
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="Cómo se resolvió la incidencia"></textarea>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.resolution">Resolución</label>
+                        <textarea id="inc-form-resolution" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"></textarea>
                     </div>
                     <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeIncidentModal()"
-                            class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">Cancelar</button>
-                        <button type="submit"
-                            class="px-4 py-2 rounded-lg text-sm bg-orange-600 hover:bg-orange-700 text-white font-medium transition-colors">Guardar</button>
+                        <button type="button" onclick="closeIncidentModal()" class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300" data-i18n="form.cancel">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg text-sm bg-orange-600 hover:bg-orange-700 text-white font-medium" data-i18n="form.save">Guardar</button>
                     </div>
                 </form>
             </div>
@@ -287,34 +269,85 @@
     <div id="modal-doc" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-md shadow-2xl">
             <div class="p-6">
-                <h3 class="text-lg font-semibold mb-4">Nuevo Documento</h3>
+                <h3 class="text-lg font-semibold mb-4" data-i18n="docs.new">Nuevo Documento</h3>
                 <form id="doc-form" class="space-y-4">
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Título</label>
-                        <input type="text" id="doc-form-title" required
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="Título del documento">
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.title_label">Título</label>
+                        <input type="text" id="doc-form-title" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Categoría</label>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="form.category">Categoría</label>
                         <select id="doc-form-category" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
                             <option value="general">General</option>
                             <option value="plan">Plan</option>
                             <option value="arquitectura">Arquitectura</option>
                             <option value="rollback">Rollback</option>
                             <option value="contactos">Contactos</option>
-                            <option value="lecciones">Lecciones Aprendidas</option>
+                            <option value="lecciones">Lecciones</option>
                             <option value="comandos">Comandos</option>
                             <option value="configuracion">Configuración</option>
                         </select>
                     </div>
                     <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeDocModal()"
-                            class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">Cancelar</button>
-                        <button type="submit"
-                            class="px-4 py-2 rounded-lg text-sm bg-purple-600 hover:bg-purple-700 text-white font-medium transition-colors">Crear</button>
+                        <button type="button" onclick="closeDocModal()" class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300" data-i18n="form.cancel">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg text-sm bg-purple-600 hover:bg-purple-700 text-white font-medium" data-i18n="form.create">Crear</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add/Edit Contact -->
+    <div id="modal-contact" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-md shadow-2xl">
+            <div class="p-6">
+                <h3 id="contact-modal-title" class="text-lg font-semibold mb-4"></h3>
+                <form id="contact-form" class="space-y-4">
+                    <input type="hidden" id="contact-form-id">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="contacts.name">Nombre</label>
+                        <input type="text" id="contact-form-name" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="contacts.role">Rol</label>
+                        <input type="text" id="contact-form-role" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Email</label>
+                            <input type="email" id="contact-form-email" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1" data-i18n="contacts.phone">Teléfono</label>
+                            <input type="text" id="contact-form-phone" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="contacts.company">Empresa</label>
+                        <input type="text" id="contact-form-company" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1" data-i18n="contacts.notes">Notas</label>
+                        <textarea id="contact-form-notes" rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeContactModal()" class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300" data-i18n="form.cancel">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg text-sm bg-teal-600 hover:bg-teal-700 text-white font-medium" data-i18n="form.save">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Contact Info (from Gantt click) -->
+    <div id="modal-contact-info" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-sm shadow-2xl">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold" data-i18n="contacts.info">Información de Contacto</h3>
+                    <button onclick="closeContactInfoModal()" class="text-gray-400 hover:text-white"><i class="fas fa-xmark text-lg"></i></button>
+                </div>
+                <div id="contact-info-content"></div>
             </div>
         </div>
     </div>

@@ -65,6 +65,16 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS contacts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            role TEXT,
+            email TEXT,
+            phone TEXT,
+            company TEXT,
+            notes TEXT
+        );
     """)
 
     # Insert default phases if empty
@@ -188,6 +198,24 @@ def init_db():
         cursor.executemany(
             "INSERT INTO documentation (title, category, content) VALUES (?, ?, ?)",
             default_docs,
+        )
+
+    # Insert default contacts if empty
+    cursor.execute("SELECT COUNT(*) FROM contacts")
+    if cursor.fetchone()[0] == 0:
+        default_contacts = [
+            ("Basis Lead", "SAP Basis Administrator", None, None, None, "Responsable de la administración técnica SAP y ejecución del SUM"),
+            ("DBA", "Database Administrator", None, None, None, "Responsable de base de datos, backups y restauraciones"),
+            ("ABAP Lead", "ABAP Development Lead", None, None, None, "Responsable de correcciones ABAP, SPDD/SPAU"),
+            ("IS-U Funcional", "Consultor Funcional IS-U", None, None, None, "Responsable funcional de procesos IS-U (facturación, contratos, medidores)"),
+            ("Project Manager", "Project Manager", None, None, None, "Coordinación general del proyecto de upgrade"),
+            ("Infra/OS", "Infrastructure & OS Admin", None, None, None, "Responsable de infraestructura, servidores y sistema operativo"),
+            ("QA Lead", "Quality Assurance Lead", None, None, None, "Responsable de pruebas técnicas y UAT"),
+            ("SAP Support", "SAP Product Support", None, None, None, "Soporte SAP para incidencias durante upgrade"),
+        ]
+        cursor.executemany(
+            "INSERT INTO contacts (name, role, email, phone, company, notes) VALUES (?, ?, ?, ?, ?, ?)",
+            default_contacts,
         )
 
     conn.commit()
