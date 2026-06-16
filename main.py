@@ -22,6 +22,8 @@ class StepCreate(BaseModel):
     description: Optional[str] = None
     responsible: Optional[str] = None
     sort_order: Optional[int] = 0
+    planned_start: Optional[str] = None
+    planned_end: Optional[str] = None
 
 
 class StepUpdate(BaseModel):
@@ -31,6 +33,10 @@ class StepUpdate(BaseModel):
     notes: Optional[str] = None
     responsible: Optional[str] = None
     sort_order: Optional[int] = None
+    planned_start: Optional[str] = None
+    planned_end: Optional[str] = None
+    actual_start: Optional[str] = None
+    actual_end: Optional[str] = None
 
 
 class IncidentCreate(BaseModel):
@@ -187,9 +193,10 @@ def create_step(step: StepCreate):
         raise HTTPException(status_code=404, detail="Phase not found")
 
     cursor.execute(
-        """INSERT INTO steps (phase_id, title, description, responsible, sort_order)
-           VALUES (?, ?, ?, ?, ?)""",
-        (step.phase_id, step.title, step.description, step.responsible, step.sort_order),
+        """INSERT INTO steps (phase_id, title, description, responsible, sort_order, planned_start, planned_end)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (step.phase_id, step.title, step.description, step.responsible, step.sort_order,
+         step.planned_start, step.planned_end),
     )
     conn.commit()
     step_id = cursor.lastrowid

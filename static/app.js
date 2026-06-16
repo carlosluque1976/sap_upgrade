@@ -21,7 +21,7 @@ async function api(url, options = {}) {
 // --- Views ---
 function showView(view) {
     currentView = view;
-    const views = ['dashboard', 'steps', 'incidents', 'docs'];
+    const views = ['dashboard', 'steps', 'incidents', 'docs', 'gantt'];
     views.forEach(v => {
         document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
     });
@@ -37,6 +37,7 @@ function showView(view) {
     if (view === 'steps') loadSteps();
     if (view === 'incidents') loadIncidents();
     if (view === 'docs') loadDocs();
+    if (view === 'gantt') loadGantt();
 }
 
 // ========================================
@@ -541,6 +542,160 @@ document.getElementById('doc-form').addEventListener('submit', async (e) => {
     currentDocId = newDoc.id;
     loadDocs();
 });
+
+// ========================================
+// GANTT CHART
+// ========================================
+async function loadGantt() {
+    if (phases.length === 0) await loadPhases();
+    const steps = await api('/api/steps');
+
+    // Find date range
+    const stepsWithDates = steps.filter(s => s.planned_start && s.planned_end);
+    if (stepsWithDates.length === 0) {
+        document.getElementById('gantt-container').innerHTML = `
+            <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-calendar-xmark text-4xl mb-3"></i>
+                <p>No hay pasos con fechas planificadas asignadas.</p>
+            </div>`;
+        return;
+    }
+
+    const allStarts = stepsWithDates.map(s => new Date(s.planned_start));
+    const allEnds = stepsWithDates.map(s => new Date(s.planned_end));
+    const minDate = new Date(Math.min(...allStarts));
+    const maxDate = new Date(Math.max(...allEnds));
+
+    // Add padding
+    minDate.setDate(minDate.getDate() - 1);
+    maxDate.setDate(maxDate.getDate() + 1);
+
+    const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
+    const dayWidth = 28; // pixels per day
+    const headerHeight = 50;
+    const rowHeight = 32;
+    const labelWidth = 320;
+
+    // Generate weeks/days header
+    let headerHtml = '';
+    let daysHtml = '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Week headers
+    let weekStart = new Date(minDate);
+    const weekLabels = [];
+    while (weekStart <= maxDate) {
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        const effectiveEnd = weekEnd > maxDate ? maxDate : weekEnd;
+        const daysInWeek = Math.ceil((effectiveEnd - weekStart) / (1000 * 60 * 60 * 24)) + 1;
+        weekLabels.push({
+            label: `${weekStart.getDate()}/${weekStart.getMonth() + 1}`,
+            width: daysInWeek * dayWidth
+        });
+        weekStart.setDate(weekStart.getDate() + 7);
+    }
+
+    headerHtml = weekLabels.map(w =>
+        `<div class="flex-shrink-0 text-center text-xs text-gray-400 border-r border-gray-700 font-medium" style="width:${w.width}px">${w.label}</div>`
+    ).join('');
+
+    // Day cells
+    for (let d = 0; d < totalDays; d++) {
+        const currentDay = new Date(minDate);
+        currentDay.setDate(currentDay.getDate() + d);
+        const isWeekend = currentDay.getDay() === 0 || currentDay.getDay() === 6;
+        const isToday = currentDay.getTime() === today.getTime();
+        const dayNum = currentDay.getDate();
+        const bgClass = isToday ? 'bg-blue-900/40' : isWeekend ? 'bg-gray-800/50' : '';
+        daysHtml += `<div class="flex-shrink-0 text-center text-[10px] text-gray-600 border-r border-gray-700/50 ${bgClass}" style="width:${dayWidth}px">${dayNum}</div>`;
+    }
+
+    // Status colors
+    const statusColors = {
+        pending: 'bg-yellow-500',
+        in_progress: 'bg-blue-500',
+        completed: 'bg-green-500',
+        blocked: 'bg-red-500',
+    };
+
+    // Build rows grouped by phase
+    let rowsHtml = '';
+    let rowIndex = 0;
+
+    phases.forEach(phase => {
+        const phaseSteps = stepsWithDates.filter(s => s.phase_id === phase.id);
+        if (phaseSteps.length === 0) return;
+
+        // Phase header row
+        rowsHtml += `
+            <div class="flex border-b border-gray-700" style="height:${rowHeight}px">
+                <div class="flex-shrink-0 flex items-center px-3 bg-gray-750 border-r border-gray-700 font-semibold text-xs text-blue-400 truncate" style="width:${labelWidth}px; background: rgba(30,58,95,0.3)">
+                    <i class="fas fa-folder-open mr-2 text-[10px]"></i>${escapeHtml(phase.name)}
+                </div>
+                <div class="flex-1 relative" style="background: rgba(30,58,95,0.15)"></div>
+            </div>
+        `;
+        rowIndex++;
+
+        phaseSteps.forEach(step => {
+            const start = new Date(step.planned_start);
+            const end = new Date(step.planned_end);
+            const startOffset = Math.ceil((start - minDate) / (1000 * 60 * 60 * 24));
+            const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            const left = startOffset * dayWidth;
+            const width = duration * dayWidth - 4;
+            const colorClass = statusColors[step.status] || statusColors.pending;
+            const stripedBg = rowIndex % 2 === 0 ? 'bg-gray-800/30' : '';
+
+            rowsHtml += `
+                <div class="flex border-b border-gray-700/50" style="height:${rowHeight}px">
+                    <div class="flex-shrink-0 flex items-center px-3 border-r border-gray-700 text-xs text-gray-300 truncate ${stripedBg}" style="width:${labelWidth}px" title="${escapeHtml(step.title)}">
+                        ${escapeHtml(step.title)}
+                    </div>
+                    <div class="flex-1 relative ${stripedBg}" style="min-width:${totalDays * dayWidth}px">
+                        <div class="absolute top-1.5 rounded-sm h-5 ${colorClass} opacity-85 flex items-center px-2 cursor-default transition-opacity hover:opacity-100"
+                             style="left:${left}px; width:${width}px"
+                             title="${escapeHtml(step.title)}\n${step.planned_start} → ${step.planned_end}\nEstado: ${step.status}">
+                            <span class="text-[10px] text-white font-medium truncate">${duration}d</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            rowIndex++;
+        });
+    });
+
+    // Today line position
+    const todayOffset = Math.ceil((today - minDate) / (1000 * 60 * 60 * 24));
+    const todayLeft = todayOffset * dayWidth + labelWidth;
+
+    document.getElementById('gantt-container').innerHTML = `
+        <div class="relative">
+            <!-- Header -->
+            <div class="flex border-b border-gray-600 sticky top-0 bg-gray-800 z-10">
+                <div class="flex-shrink-0 flex items-center px-3 border-r border-gray-700 text-xs font-semibold text-gray-400" style="width:${labelWidth}px; height:${headerHeight}px">
+                    Tarea
+                </div>
+                <div class="flex-1 overflow-hidden">
+                    <div class="flex" style="height:25px">${headerHtml}</div>
+                    <div class="flex" style="height:25px">${daysHtml}</div>
+                </div>
+            </div>
+            <!-- Rows -->
+            <div class="relative">
+                ${rowsHtml}
+                <!-- Today marker -->
+                ${todayOffset >= 0 && todayOffset <= totalDays ? `
+                    <div class="absolute top-0 bottom-0 w-0.5 bg-red-500/70 z-20 pointer-events-none" style="left:${todayLeft}px">
+                        <div class="absolute -top-1 -left-1.5 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-gray-800"></div>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
 
 // ========================================
 // UTILS

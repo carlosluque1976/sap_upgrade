@@ -33,6 +33,10 @@
                     class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
                     <i class="fas fa-book mr-1"></i> Documentación
                 </button>
+                <button onclick="showView('gantt')" id="btn-gantt"
+                    class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
+                    <i class="fas fa-bars-staggered mr-1"></i> Gantt
+                </button>
             </nav>
         </div>
     </header>
@@ -137,6 +141,24 @@
                         <i class="fas fa-file-lines text-4xl mb-3"></i>
                         <p>Selecciona un documento para editarlo</p>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gantt View -->
+        <section id="view-gantt" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Vista Gantt del Proyecto</h2>
+                <div class="flex gap-2 items-center">
+                    <span class="text-xs text-gray-400">Leyenda:</span>
+                    <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 rounded bg-yellow-500 inline-block"></span> Pendiente</span>
+                    <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 rounded bg-blue-500 inline-block"></span> En Progreso</span>
+                    <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 rounded bg-green-500 inline-block"></span> Completado</span>
+                    <span class="inline-flex items-center gap-1 text-xs"><span class="w-3 h-3 rounded bg-red-500 inline-block"></span> Bloqueado</span>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                <div id="gantt-container" class="overflow-x-auto">
                 </div>
             </div>
         </section>
