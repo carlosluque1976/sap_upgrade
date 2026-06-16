@@ -1,7 +1,9 @@
 // --- State ---
 let currentView = 'dashboard';
 let currentPhaseFilter = null;
+let currentIncidentFilter = null;
 let phases = [];
+let currentDocId = null;
 
 // --- API Helpers ---
 async function api(url, options = {}) {
@@ -19,8 +21,10 @@ async function api(url, options = {}) {
 // --- Views ---
 function showView(view) {
     currentView = view;
-    document.getElementById('view-dashboard').classList.toggle('hidden', view !== 'dashboard');
-    document.getElementById('view-steps').classList.toggle('hidden', view !== 'steps');
+    const views = ['dashboard', 'steps', 'incidents', 'docs'];
+    views.forEach(v => {
+        document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
+    });
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('bg-blue-600', 'text-white');
@@ -31,11 +35,16 @@ function showView(view) {
 
     if (view === 'dashboard') loadDashboard();
     if (view === 'steps') loadSteps();
+    if (view === 'incidents') loadIncidents();
+    if (view === 'docs') loadDocs();
 }
 
-// --- Dashboard ---
+// ========================================
+// DASHBOARD
+// ========================================
 async function loadDashboard() {
     const data = await api('/api/dashboard');
+    const incidents = await api('/api/incidents?status=open');
 
     document.getElementById('overall-progress-bar').style.width = `${data.overall_progress}%`;
     document.getElementById('overall-progress-text').textContent = `${data.overall_progress}%`;
@@ -77,9 +86,12 @@ async function loadDashboard() {
     document.getElementById('stat-in-progress').textContent = totalInProgress;
     document.getElementById('stat-completed').textContent = totalCompleted;
     document.getElementById('stat-blocked').textContent = totalBlocked;
+    document.getElementById('stat-incidents').textContent = incidents.length;
 }
 
-// --- Steps ---
+// ========================================
+// STEPS
+// ========================================
 async function loadPhases() {
     phases = await api('/api/phases');
 }
@@ -87,7 +99,6 @@ async function loadPhases() {
 async function loadSteps() {
     if (phases.length === 0) await loadPhases();
 
-    // Render phase tabs
     const tabsHtml = [
         `<button onclick="filterPhase(null)" class="phase-tab px-3 py-1.5 rounded-lg text-sm transition-colors ${!currentPhaseFilter ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}">Todas</button>`,
         ...phases.map(p =>
@@ -96,7 +107,6 @@ async function loadSteps() {
     ].join('');
     document.getElementById('phase-tabs').innerHTML = tabsHtml;
 
-    // Fetch steps
     const url = currentPhaseFilter ? `/api/steps?phase_id=${currentPhaseFilter}` : '/api/steps';
     const steps = await api(url);
 
@@ -123,19 +133,20 @@ async function loadSteps() {
         return `
             <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors">
                 <div class="flex items-start justify-between gap-3">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-${st.color}-500/20 text-${st.color}-400">
                                 <i class="fas fa-${st.icon} text-[10px]"></i> ${st.label}
                             </span>
                             <span class="text-xs text-gray-500">${phaseName}</span>
+                            <span class="text-xs text-gray-600">#${step.sort_order}</span>
                         </div>
                         <h4 class="font-medium text-white">${escapeHtml(step.title)}</h4>
                         ${step.description ? `<p class="text-sm text-gray-400 mt-1">${escapeHtml(step.description)}</p>` : ''}
                         ${step.responsible ? `<p class="text-xs text-gray-500 mt-1"><i class="fas fa-user mr-1"></i>${escapeHtml(step.responsible)}</p>` : ''}
-                        ${step.notes ? `<p class="text-xs text-gray-500 mt-1 italic"><i class="fas fa-file-lines mr-1"></i>Documentado</p>` : ''}
+                        ${step.notes ? `<p class="text-xs text-green-500 mt-1"><i class="fas fa-file-lines mr-1"></i>Documentado</p>` : ''}
                     </div>
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 flex-shrink-0">
                         <select onchange="updateStatus(${step.id}, this.value)" 
                             class="bg-gray-700 border border-gray-600 rounded text-xs px-2 py-1 text-gray-300">
                             <option value="pending" ${step.status === 'pending' ? 'selected' : ''}>Pendiente</option>
@@ -143,7 +154,7 @@ async function loadSteps() {
                             <option value="completed" ${step.status === 'completed' ? 'selected' : ''}>Completado</option>
                             <option value="blocked" ${step.status === 'blocked' ? 'selected' : ''}>Bloqueado</option>
                         </select>
-                        <button onclick="openNotesModal(${step.id}, '${escapeHtml(step.title)}', \`${escapeHtml(step.notes || '')}\`)"
+                        <button onclick="openNotesModal(${step.id})"
                             class="p-2 text-gray-400 hover:text-blue-400 transition-colors" title="Documentar">
                             <i class="fas fa-file-pen"></i>
                         </button>
@@ -169,28 +180,21 @@ function filterPhase(phaseId) {
     loadSteps();
 }
 
-// --- Status Update ---
 async function updateStatus(stepId, status) {
-    await api(`/api/steps/${stepId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status }),
-    });
+    await api(`/api/steps/${stepId}`, { method: 'PUT', body: JSON.stringify({ status }) });
     loadSteps();
 }
 
-// --- Modal: Add/Edit Step ---
+// --- Step Modal ---
 function openAddModal() {
     document.getElementById('modal-title').textContent = 'Nuevo Paso';
     document.getElementById('form-step-id').value = '';
     document.getElementById('form-title').value = '';
     document.getElementById('form-description').value = '';
     document.getElementById('form-responsible').value = '';
-
-    // Populate phases select
     const select = document.getElementById('form-phase');
     select.innerHTML = phases.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
     if (currentPhaseFilter) select.value = currentPhaseFilter;
-
     document.getElementById('modal-step').classList.remove('hidden');
 }
 
@@ -201,11 +205,9 @@ async function editStep(stepId) {
     document.getElementById('form-title').value = step.title;
     document.getElementById('form-description').value = step.description || '';
     document.getElementById('form-responsible').value = step.responsible || '';
-
     const select = document.getElementById('form-phase');
     select.innerHTML = phases.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
     select.value = step.phase_id;
-
     document.getElementById('modal-step').classList.remove('hidden');
 }
 
@@ -222,22 +224,21 @@ document.getElementById('step-form').addEventListener('submit', async (e) => {
         description: document.getElementById('form-description').value || null,
         responsible: document.getElementById('form-responsible').value || null,
     };
-
     if (stepId) {
         await api(`/api/steps/${stepId}`, { method: 'PUT', body: JSON.stringify(payload) });
     } else {
         await api('/api/steps', { method: 'POST', body: JSON.stringify(payload) });
     }
-
     closeModal();
     loadSteps();
 });
 
-// --- Modal: Notes ---
-function openNotesModal(stepId, title, notes) {
+// --- Notes Modal ---
+async function openNotesModal(stepId) {
+    const step = await api(`/api/steps/${stepId}`);
     document.getElementById('notes-step-id').value = stepId;
-    document.getElementById('notes-step-title').textContent = title;
-    document.getElementById('notes-content').value = notes;
+    document.getElementById('notes-step-title').textContent = step.title;
+    document.getElementById('notes-content').value = step.notes || '';
     document.getElementById('modal-notes').classList.remove('hidden');
 }
 
@@ -248,10 +249,7 @@ function closeNotesModal() {
 async function saveNotes() {
     const stepId = document.getElementById('notes-step-id').value;
     const notes = document.getElementById('notes-content').value;
-    await api(`/api/steps/${stepId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ notes }),
-    });
+    await api(`/api/steps/${stepId}`, { method: 'PUT', body: JSON.stringify({ notes }) });
     closeNotesModal();
     loadSteps();
 }
@@ -263,8 +261,292 @@ async function deleteStep(stepId) {
     loadSteps();
 }
 
-// --- Utils ---
+// ========================================
+// INCIDENTS
+// ========================================
+async function loadIncidents() {
+    if (phases.length === 0) await loadPhases();
+
+    const url = currentIncidentFilter ? `/api/incidents?status=${currentIncidentFilter}` : '/api/incidents';
+    const incidents = await api(url);
+
+    // Update filter buttons
+    document.querySelectorAll('.inc-filter-btn').forEach((btn, i) => {
+        const filters = [null, 'open', 'in_progress', 'resolved', 'closed'];
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-700', 'text-gray-300');
+        if (filters[i] === currentIncidentFilter) {
+            btn.classList.remove('bg-gray-700', 'text-gray-300');
+            btn.classList.add('bg-blue-600', 'text-white');
+        }
+    });
+
+    if (incidents.length === 0) {
+        document.getElementById('incidents-list').innerHTML = `
+            <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-check-circle text-4xl mb-3"></i>
+                <p>No hay incidencias registradas.</p>
+            </div>`;
+        return;
+    }
+
+    const severityConfig = {
+        low: { label: 'Baja', color: 'gray' },
+        medium: { label: 'Media', color: 'yellow' },
+        high: { label: 'Alta', color: 'orange' },
+        critical: { label: 'Crítica', color: 'red' },
+    };
+
+    const statusConfig = {
+        open: { label: 'Abierta', color: 'red' },
+        in_progress: { label: 'En Progreso', color: 'blue' },
+        resolved: { label: 'Resuelta', color: 'green' },
+        closed: { label: 'Cerrada', color: 'gray' },
+    };
+
+    const html = incidents.map(inc => {
+        const sev = severityConfig[inc.severity] || severityConfig.medium;
+        const st = statusConfig[inc.status] || statusConfig.open;
+        const phaseName = inc.phase_id ? (phases.find(p => p.id === inc.phase_id)?.name || '') : '';
+
+        return `
+            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-${st.color}-500/20 text-${st.color}-400">
+                                ${st.label}
+                            </span>
+                            <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-${sev.color}-500/20 text-${sev.color}-400">
+                                <i class="fas fa-triangle-exclamation text-[10px]"></i> ${sev.label}
+                            </span>
+                            ${phaseName ? `<span class="text-xs text-gray-500">${phaseName}</span>` : ''}
+                        </div>
+                        <h4 class="font-medium text-white">${escapeHtml(inc.title)}</h4>
+                        ${inc.description ? `<p class="text-sm text-gray-400 mt-1">${escapeHtml(inc.description)}</p>` : ''}
+                        ${inc.responsible ? `<p class="text-xs text-gray-500 mt-1"><i class="fas fa-user mr-1"></i>${escapeHtml(inc.responsible)}</p>` : ''}
+                        ${inc.resolution ? `<p class="text-xs text-green-400 mt-2"><i class="fas fa-check mr-1"></i><strong>Resolución:</strong> ${escapeHtml(inc.resolution)}</p>` : ''}
+                        <p class="text-xs text-gray-600 mt-1">${new Date(inc.created_at).toLocaleString('es-ES')}</p>
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <select onchange="updateIncidentStatus(${inc.id}, this.value)"
+                            class="bg-gray-700 border border-gray-600 rounded text-xs px-2 py-1 text-gray-300">
+                            <option value="open" ${inc.status === 'open' ? 'selected' : ''}>Abierta</option>
+                            <option value="in_progress" ${inc.status === 'in_progress' ? 'selected' : ''}>En Progreso</option>
+                            <option value="resolved" ${inc.status === 'resolved' ? 'selected' : ''}>Resuelta</option>
+                            <option value="closed" ${inc.status === 'closed' ? 'selected' : ''}>Cerrada</option>
+                        </select>
+                        <button onclick="editIncident(${inc.id})"
+                            class="p-2 text-gray-400 hover:text-yellow-400 transition-colors" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button onclick="deleteIncident(${inc.id})"
+                            class="p-2 text-gray-400 hover:text-red-400 transition-colors" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    document.getElementById('incidents-list').innerHTML = html;
+}
+
+function filterIncidents(status) {
+    currentIncidentFilter = status;
+    loadIncidents();
+}
+
+async function updateIncidentStatus(incidentId, status) {
+    await api(`/api/incidents/${incidentId}`, { method: 'PUT', body: JSON.stringify({ status }) });
+    loadIncidents();
+}
+
+// --- Incident Modal ---
+function openIncidentModal() {
+    document.getElementById('incident-modal-title').textContent = 'Nueva Incidencia';
+    document.getElementById('inc-form-id').value = '';
+    document.getElementById('inc-form-title').value = '';
+    document.getElementById('inc-form-description').value = '';
+    document.getElementById('inc-form-severity').value = 'medium';
+    document.getElementById('inc-form-responsible').value = '';
+    document.getElementById('inc-form-resolution').value = '';
+    document.getElementById('inc-resolution-section').classList.add('hidden');
+
+    const select = document.getElementById('inc-form-phase');
+    select.innerHTML = '<option value="">-- Sin fase --</option>' +
+        phases.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+    document.getElementById('modal-incident').classList.remove('hidden');
+}
+
+async function editIncident(incidentId) {
+    const inc = await api(`/api/incidents/${incidentId}`);
+    document.getElementById('incident-modal-title').textContent = 'Editar Incidencia';
+    document.getElementById('inc-form-id').value = inc.id;
+    document.getElementById('inc-form-title').value = inc.title;
+    document.getElementById('inc-form-description').value = inc.description || '';
+    document.getElementById('inc-form-severity').value = inc.severity;
+    document.getElementById('inc-form-responsible').value = inc.responsible || '';
+    document.getElementById('inc-form-resolution').value = inc.resolution || '';
+    document.getElementById('inc-resolution-section').classList.remove('hidden');
+
+    const select = document.getElementById('inc-form-phase');
+    select.innerHTML = '<option value="">-- Sin fase --</option>' +
+        phases.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    if (inc.phase_id) select.value = inc.phase_id;
+
+    document.getElementById('modal-incident').classList.remove('hidden');
+}
+
+function closeIncidentModal() {
+    document.getElementById('modal-incident').classList.add('hidden');
+}
+
+document.getElementById('incident-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const incId = document.getElementById('inc-form-id').value;
+    const payload = {
+        title: document.getElementById('inc-form-title').value,
+        description: document.getElementById('inc-form-description').value || null,
+        severity: document.getElementById('inc-form-severity').value,
+        phase_id: document.getElementById('inc-form-phase').value ? parseInt(document.getElementById('inc-form-phase').value) : null,
+        responsible: document.getElementById('inc-form-responsible').value || null,
+    };
+
+    if (incId) {
+        payload.resolution = document.getElementById('inc-form-resolution').value || null;
+        await api(`/api/incidents/${incId}`, { method: 'PUT', body: JSON.stringify(payload) });
+    } else {
+        await api('/api/incidents', { method: 'POST', body: JSON.stringify(payload) });
+    }
+    closeIncidentModal();
+    loadIncidents();
+});
+
+async function deleteIncident(incidentId) {
+    if (!confirm('¿Eliminar esta incidencia?')) return;
+    await api(`/api/incidents/${incidentId}`, { method: 'DELETE' });
+    loadIncidents();
+}
+
+// ========================================
+// DOCUMENTATION
+// ========================================
+async function loadDocs() {
+    const docs = await api('/api/docs');
+
+    const categoryIcons = {
+        general: 'file-lines',
+        plan: 'map',
+        arquitectura: 'sitemap',
+        rollback: 'rotate-left',
+        contactos: 'address-book',
+        lecciones: 'lightbulb',
+        comandos: 'terminal',
+        configuracion: 'gear',
+    };
+
+    const html = docs.map(doc => {
+        const icon = categoryIcons[doc.category] || 'file-lines';
+        const isActive = currentDocId === doc.id;
+        return `
+            <button onclick="selectDoc(${doc.id})"
+                class="w-full text-left p-3 rounded-lg border transition-colors ${isActive ? 'bg-purple-600/20 border-purple-500 text-purple-300' : 'bg-gray-800 border-gray-700 hover:border-gray-600 text-gray-300'}">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-${icon} text-sm"></i>
+                    <span class="text-sm font-medium truncate">${escapeHtml(doc.title)}</span>
+                </div>
+                <span class="text-xs text-gray-500 capitalize">${doc.category}</span>
+            </button>
+        `;
+    }).join('');
+
+    document.getElementById('docs-list').innerHTML = html || '<p class="text-gray-500 text-sm">No hay documentos.</p>';
+
+    if (currentDocId) {
+        await renderDocEditor(currentDocId);
+    }
+}
+
+async function selectDoc(docId) {
+    currentDocId = docId;
+    loadDocs();
+}
+
+async function renderDocEditor(docId) {
+    const doc = await api(`/api/docs/${docId}`);
+    document.getElementById('doc-editor').innerHTML = `
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="font-semibold text-white">${escapeHtml(doc.title)}</h3>
+                <span class="text-xs text-gray-500 capitalize">${doc.category} · Actualizado: ${new Date(doc.updated_at).toLocaleString('es-ES')}</span>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="saveDoc(${doc.id})"
+                    class="px-3 py-1.5 rounded-lg text-sm bg-purple-600 hover:bg-purple-700 text-white font-medium transition-colors">
+                    <i class="fas fa-save mr-1"></i> Guardar
+                </button>
+                <button onclick="deleteDoc(${doc.id})"
+                    class="px-3 py-1.5 rounded-lg text-sm bg-red-600/20 hover:bg-red-600/40 text-red-400 transition-colors">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <textarea id="doc-content" rows="16"
+            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-sm font-mono focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y"
+            placeholder="Escribe la documentación aquí...">${escapeHtml(doc.content || '')}</textarea>
+    `;
+}
+
+async function saveDoc(docId) {
+    const content = document.getElementById('doc-content').value;
+    await api(`/api/docs/${docId}`, { method: 'PUT', body: JSON.stringify({ content }) });
+    loadDocs();
+}
+
+async function deleteDoc(docId) {
+    if (!confirm('¿Eliminar este documento?')) return;
+    await api(`/api/docs/${docId}`, { method: 'DELETE' });
+    currentDocId = null;
+    document.getElementById('doc-editor').innerHTML = `
+        <div class="text-center text-gray-500 py-12">
+            <i class="fas fa-file-lines text-4xl mb-3"></i>
+            <p>Selecciona un documento para editarlo</p>
+        </div>`;
+    loadDocs();
+}
+
+// --- Doc Modal ---
+function openDocModal() {
+    document.getElementById('doc-form-title').value = '';
+    document.getElementById('doc-form-category').value = 'general';
+    document.getElementById('modal-doc').classList.remove('hidden');
+}
+
+function closeDocModal() {
+    document.getElementById('modal-doc').classList.add('hidden');
+}
+
+document.getElementById('doc-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        title: document.getElementById('doc-form-title').value,
+        category: document.getElementById('doc-form-category').value,
+        content: '',
+    };
+    const newDoc = await api('/api/docs', { method: 'POST', body: JSON.stringify(payload) });
+    closeDocModal();
+    currentDocId = newDoc.id;
+    loadDocs();
+});
+
+// ========================================
+// UTILS
+// ========================================
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;

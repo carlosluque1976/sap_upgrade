@@ -33,6 +33,38 @@ class StepUpdate(BaseModel):
     sort_order: Optional[int] = None
 
 
+class IncidentCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    severity: Optional[str] = "medium"
+    phase_id: Optional[int] = None
+    step_id: Optional[int] = None
+    responsible: Optional[str] = None
+
+
+class IncidentUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    severity: Optional[str] = None
+    status: Optional[str] = None
+    phase_id: Optional[int] = None
+    step_id: Optional[int] = None
+    resolution: Optional[str] = None
+    responsible: Optional[str] = None
+
+
+class DocCreate(BaseModel):
+    title: str
+    category: Optional[str] = "general"
+    content: Optional[str] = ""
+
+
+class DocUpdate(BaseModel):
+    title: Optional[str] = None
+    category: Optional[str] = None
+    content: Optional[str] = None
+
+
 # --- Events ---
 
 @app.on_event("startup")
@@ -211,3 +243,182 @@ def delete_step(step_id: int):
     conn.commit()
     conn.close()
     return {"message": "Step deleted"}
+
+
+# --- Routes: Incidents ---
+
+@app.get("/api/incidents")
+def get_incidents(status: Optional[str] = None, severity: Optional[str] = None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM incidents WHERE 1=1"
+    params = []
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+    if severity:
+        query += " AND severity = ?"
+        params.append(severity)
+    query += " ORDER BY created_at DESC"
+
+    cursor.execute(query, params)
+    incidents = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return incidents
+
+
+@app.get("/api/incidents/{incident_id}")
+def get_incident(incident_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return dict(row)
+
+
+@app.post("/api/incidents", status_code=201)
+def create_incident(incident: IncidentCreate):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO incidents (title, description, severity, phase_id, step_id, responsible)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (incident.title, incident.description, incident.severity,
+         incident.phase_id, incident.step_id, incident.responsible),
+    )
+    conn.commit()
+    inc_id = cursor.lastrowid
+    cursor.execute("SELECT * FROM incidents WHERE id = ?", (inc_id,))
+    new_inc = dict(cursor.fetchone())
+    conn.close()
+    return new_inc
+
+
+@app.put("/api/incidents/{incident_id}")
+def update_incident(incident_id: int, incident: IncidentUpdate):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    updates = []
+    values = []
+    for field, value in incident.model_dump(exclude_unset=True).items():
+        updates.append(f"{field} = ?")
+        values.append(value)
+
+    if updates:
+        updates.append("updated_at = CURRENT_TIMESTAMP")
+        values.append(incident_id)
+        query = f"UPDATE incidents SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,))
+    updated = dict(cursor.fetchone())
+    conn.close()
+    return updated
+
+
+@app.delete("/api/incidents/{incident_id}")
+def delete_incident(incident_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM incidents WHERE id = ?", (incident_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Incident not found")
+    cursor.execute("DELETE FROM incidents WHERE id = ?", (incident_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Incident deleted"}
+
+
+# --- Routes: Documentation ---
+
+@app.get("/api/docs")
+def get_docs():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM documentation ORDER BY id")
+    docs = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return docs
+
+
+@app.get("/api/docs/{doc_id}")
+def get_doc(doc_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM documentation WHERE id = ?", (doc_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return dict(row)
+
+
+@app.post("/api/docs", status_code=201)
+def create_doc(doc: DocCreate):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO documentation (title, category, content) VALUES (?, ?, ?)",
+        (doc.title, doc.category, doc.content),
+    )
+    conn.commit()
+    doc_id = cursor.lastrowid
+    cursor.execute("SELECT * FROM documentation WHERE id = ?", (doc_id,))
+    new_doc = dict(cursor.fetchone())
+    conn.close()
+    return new_doc
+
+
+@app.put("/api/docs/{doc_id}")
+def update_doc(doc_id: int, doc: DocUpdate):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM documentation WHERE id = ?", (doc_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    updates = []
+    values = []
+    for field, value in doc.model_dump(exclude_unset=True).items():
+        updates.append(f"{field} = ?")
+        values.append(value)
+
+    if updates:
+        updates.append("updated_at = CURRENT_TIMESTAMP")
+        values.append(doc_id)
+        query = f"UPDATE documentation SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.execute("SELECT * FROM documentation WHERE id = ?", (doc_id,))
+    updated = dict(cursor.fetchone())
+    conn.close()
+    return updated
+
+
+@app.delete("/api/docs/{doc_id}")
+def delete_doc(doc_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM documentation WHERE id = ?", (doc_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Document not found")
+    cursor.execute("DELETE FROM documentation WHERE id = ?", (doc_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Document deleted"}

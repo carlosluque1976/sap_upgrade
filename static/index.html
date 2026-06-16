@@ -16,7 +16,7 @@
                 <i class="fas fa-server text-blue-400 text-2xl"></i>
                 <h1 class="text-xl font-bold text-white">SAP Upgrade Tracker</h1>
             </div>
-            <nav class="flex gap-2">
+            <nav class="flex gap-2 flex-wrap">
                 <button onclick="showView('dashboard')" id="btn-dashboard"
                     class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white">
                     <i class="fas fa-chart-pie mr-1"></i> Dashboard
@@ -24,6 +24,14 @@
                 <button onclick="showView('steps')" id="btn-steps"
                     class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
                     <i class="fas fa-list-check mr-1"></i> Pasos
+                </button>
+                <button onclick="showView('incidents')" id="btn-incidents"
+                    class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
+                    <i class="fas fa-triangle-exclamation mr-1"></i> Incidencias
+                </button>
+                <button onclick="showView('docs')" id="btn-docs"
+                    class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
+                    <i class="fas fa-book mr-1"></i> Documentación
                 </button>
             </nav>
         </div>
@@ -49,12 +57,10 @@
             </div>
 
             <!-- Phase Cards -->
-            <div id="phase-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <!-- Populated by JS -->
-            </div>
+            <div id="phase-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>
 
             <!-- Status Summary -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
                     <i class="fas fa-clock text-yellow-400 text-xl mb-2"></i>
                     <p id="stat-pending" class="text-2xl font-bold text-yellow-400">0</p>
@@ -75,12 +81,16 @@
                     <p id="stat-blocked" class="text-2xl font-bold text-red-400">0</p>
                     <p class="text-xs text-gray-400">Bloqueados</p>
                 </div>
+                <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
+                    <i class="fas fa-triangle-exclamation text-orange-400 text-xl mb-2"></i>
+                    <p id="stat-incidents" class="text-2xl font-bold text-orange-400">0</p>
+                    <p class="text-xs text-gray-400">Incidencias Abiertas</p>
+                </div>
             </div>
         </section>
 
         <!-- Steps View -->
         <section id="view-steps" class="hidden">
-            <!-- Add Step Button -->
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-semibold">Gestión de Pasos</h2>
                 <button onclick="openAddModal()"
@@ -88,15 +98,46 @@
                     <i class="fas fa-plus mr-1"></i> Nuevo Paso
                 </button>
             </div>
+            <div id="phase-tabs" class="flex gap-2 mb-4 flex-wrap"></div>
+            <div id="steps-list" class="space-y-3"></div>
+        </section>
 
-            <!-- Phase Tabs -->
-            <div id="phase-tabs" class="flex gap-2 mb-4 flex-wrap">
-                <!-- Populated by JS -->
+        <!-- Incidents View -->
+        <section id="view-incidents" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Gestión de Incidencias</h2>
+                <button onclick="openIncidentModal()"
+                    class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> Nueva Incidencia
+                </button>
             </div>
+            <div id="incident-filters" class="flex gap-2 mb-4 flex-wrap">
+                <button onclick="filterIncidents(null)" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-blue-600 text-white">Todas</button>
+                <button onclick="filterIncidents('open')" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600">Abiertas</button>
+                <button onclick="filterIncidents('in_progress')" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600">En Progreso</button>
+                <button onclick="filterIncidents('resolved')" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600">Resueltas</button>
+                <button onclick="filterIncidents('closed')" class="inc-filter-btn px-3 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600">Cerradas</button>
+            </div>
+            <div id="incidents-list" class="space-y-3"></div>
+        </section>
 
-            <!-- Steps List -->
-            <div id="steps-list" class="space-y-3">
-                <!-- Populated by JS -->
+        <!-- Documentation View -->
+        <section id="view-docs" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Documentación del Proceso</h2>
+                <button onclick="openDocModal()"
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> Nuevo Documento
+                </button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div id="docs-list" class="lg:col-span-1 space-y-2"></div>
+                <div id="doc-editor" class="lg:col-span-2 bg-gray-800 rounded-xl border border-gray-700 p-5 min-h-[400px]">
+                    <div class="text-center text-gray-500 py-12">
+                        <i class="fas fa-file-lines text-4xl mb-3"></i>
+                        <p>Selecciona un documento para editarlo</p>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
@@ -110,8 +151,7 @@
                     <input type="hidden" id="form-step-id">
                     <div>
                         <label class="block text-sm text-gray-400 mb-1">Fase</label>
-                        <select id="form-phase" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        </select>
+                        <select id="form-phase" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"></select>
                     </div>
                     <div>
                         <label class="block text-sm text-gray-400 mb-1">Título</label>
@@ -133,13 +173,9 @@
                     </div>
                     <div class="flex justify-end gap-2 pt-2">
                         <button type="button" onclick="closeModal()"
-                            class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">
-                            Cancelar
-                        </button>
+                            class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">Cancelar</button>
                         <button type="submit"
-                            class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
-                            Guardar
-                        </button>
+                            class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">Guardar</button>
                     </div>
                 </form>
             </div>
@@ -158,14 +194,105 @@
                     placeholder="Documenta aquí los detalles, comandos ejecutados, observaciones..."></textarea>
                 <div class="flex justify-end gap-2 pt-4">
                     <button onclick="closeNotesModal()"
-                        class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">
-                        Cancelar
-                    </button>
+                        class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">Cancelar</button>
                     <button onclick="saveNotes()"
-                        class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
-                        Guardar Notas
-                    </button>
+                        class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">Guardar Notas</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add/Edit Incident -->
+    <div id="modal-incident" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <h3 id="incident-modal-title" class="text-lg font-semibold mb-4">Nueva Incidencia</h3>
+                <form id="incident-form" class="space-y-4">
+                    <input type="hidden" id="inc-form-id">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Título</label>
+                        <input type="text" id="inc-form-title" required
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="Descripción breve de la incidencia">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Descripción</label>
+                        <textarea id="inc-form-description" rows="3"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="Detalle completo de la incidencia"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Severidad</label>
+                            <select id="inc-form-severity" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                                <option value="low">Baja</option>
+                                <option value="medium" selected>Media</option>
+                                <option value="high">Alta</option>
+                                <option value="critical">Crítica</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Fase relacionada</label>
+                            <select id="inc-form-phase" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                                <option value="">-- Sin fase --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Responsable</label>
+                        <input type="text" id="inc-form-responsible"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="Responsable de resolver">
+                    </div>
+                    <div id="inc-resolution-section" class="hidden">
+                        <label class="block text-sm text-gray-400 mb-1">Resolución</label>
+                        <textarea id="inc-form-resolution" rows="3"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="Cómo se resolvió la incidencia"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeIncidentModal()"
+                            class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">Cancelar</button>
+                        <button type="submit"
+                            class="px-4 py-2 rounded-lg text-sm bg-orange-600 hover:bg-orange-700 text-white font-medium transition-colors">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: New Document -->
+    <div id="modal-doc" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-md shadow-2xl">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Nuevo Documento</h3>
+                <form id="doc-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Título</label>
+                        <input type="text" id="doc-form-title" required
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="Título del documento">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Categoría</label>
+                        <select id="doc-form-category" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                            <option value="general">General</option>
+                            <option value="plan">Plan</option>
+                            <option value="arquitectura">Arquitectura</option>
+                            <option value="rollback">Rollback</option>
+                            <option value="contactos">Contactos</option>
+                            <option value="lecciones">Lecciones Aprendidas</option>
+                            <option value="comandos">Comandos</option>
+                            <option value="configuracion">Configuración</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeDocModal()"
+                            class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">Cancelar</button>
+                        <button type="submit"
+                            class="px-4 py-2 rounded-lg text-sm bg-purple-600 hover:bg-purple-700 text-white font-medium transition-colors">Crear</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
