@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAP Upgrade Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-server text-blue-400 text-2xl"></i>
+                <h1 class="text-xl font-bold text-white">SAP Upgrade Tracker</h1>
+            </div>
+            <nav class="flex gap-2">
+                <button onclick="showView('dashboard')" id="btn-dashboard"
+                    class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white">
+                    <i class="fas fa-chart-pie mr-1"></i> Dashboard
+                </button>
+                <button onclick="showView('steps')" id="btn-steps"
+                    class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">
+                    <i class="fas fa-list-check mr-1"></i> Pasos
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+
+        <!-- Dashboard View -->
+        <section id="view-dashboard">
+            <!-- Overall Progress -->
+            <div class="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
+                <h2 class="text-lg font-semibold mb-3">Progreso General del Upgrade</h2>
+                <div class="flex items-center gap-4">
+                    <div class="flex-1">
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div id="overall-progress-bar" class="bg-blue-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <span id="overall-progress-text" class="text-2xl font-bold text-blue-400">0%</span>
+                </div>
+                <p id="overall-progress-detail" class="text-sm text-gray-400 mt-2">0 de 0 pasos completados</p>
+            </div>
+
+            <!-- Phase Cards -->
+            <div id="phase-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Status Summary -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
+                    <i class="fas fa-clock text-yellow-400 text-xl mb-2"></i>
+                    <p id="stat-pending" class="text-2xl font-bold text-yellow-400">0</p>
+                    <p class="text-xs text-gray-400">Pendientes</p>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
+                    <i class="fas fa-spinner text-blue-400 text-xl mb-2"></i>
+                    <p id="stat-in-progress" class="text-2xl font-bold text-blue-400">0</p>
+                    <p class="text-xs text-gray-400">En Progreso</p>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
+                    <i class="fas fa-check-circle text-green-400 text-xl mb-2"></i>
+                    <p id="stat-completed" class="text-2xl font-bold text-green-400">0</p>
+                    <p class="text-xs text-gray-400">Completados</p>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
+                    <i class="fas fa-ban text-red-400 text-xl mb-2"></i>
+                    <p id="stat-blocked" class="text-2xl font-bold text-red-400">0</p>
+                    <p class="text-xs text-gray-400">Bloqueados</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Steps View -->
+        <section id="view-steps" class="hidden">
+            <!-- Add Step Button -->
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Gestión de Pasos</h2>
+                <button onclick="openAddModal()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> Nuevo Paso
+                </button>
+            </div>
+
+            <!-- Phase Tabs -->
+            <div id="phase-tabs" class="flex gap-2 mb-4 flex-wrap">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Steps List -->
+            <div id="steps-list" class="space-y-3">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Add/Edit Step -->
+    <div id="modal-step" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-lg shadow-2xl">
+            <div class="p-6">
+                <h3 id="modal-title" class="text-lg font-semibold mb-4">Nuevo Paso</h3>
+                <form id="step-form" class="space-y-4">
+                    <input type="hidden" id="form-step-id">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Fase</label>
+                        <select id="form-phase" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Título</label>
+                        <input type="text" id="form-title" required
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Nombre del paso">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Descripción</label>
+                        <textarea id="form-description" rows="3"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Descripción detallada del paso"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Responsable</label>
+                        <input type="text" id="form-responsible"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Nombre del responsable">
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeModal()"
+                            class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Step Notes -->
+    <div id="modal-notes" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-lg shadow-2xl">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Documentación del Paso</h3>
+                <input type="hidden" id="notes-step-id">
+                <p id="notes-step-title" class="text-sm text-gray-400 mb-3"></p>
+                <textarea id="notes-content" rows="8"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Documenta aquí los detalles, comandos ejecutados, observaciones..."></textarea>
+                <div class="flex justify-end gap-2 pt-4">
+                    <button onclick="closeNotesModal()"
+                        class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">
+                        Cancelar
+                    </button>
+                    <button onclick="saveNotes()"
+                        class="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
+                        Guardar Notas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
